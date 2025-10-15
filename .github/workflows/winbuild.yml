@@ -29,7 +29,9 @@ jobs:
           pyinstaller --onefile --name=WasserzeichenTool main.py
 
       - name: EXE veröffentlichen
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4.6.2
         with:
           name: WasserzeichenTool-Windows
           path: dist/WasserzeichenTool.exe
+
+          
