@@ -26,7 +26,8 @@ jobs:
 
       - name: EXE bauen mit PyInstaller
         run: |
-          pyinstaller --onefile --name=WasserzeichenTool main.py
+          pyinstaller --onefile --name=WasserzeichenTool main.py --runtime-tmpdir .
+
 
       - name: EXE veröffentlichen
         uses: actions/upload-artifact@v4.6.2
