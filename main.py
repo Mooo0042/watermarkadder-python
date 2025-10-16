@@ -1,9 +1,26 @@
 import os
+import sys
 import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
 from PIL import Image, ImageTk, ImageEnhance, ImageStat
 import cairosvg
 from io import BytesIO
+
+# Windows DPI scaling fix
+try:
+    from ctypes import windll
+    windll.shcore.SetProcessDpiAwareness(1)
+except Exception:
+    pass
+
+# PyInstaller TCL/TK path fix (for Windows onefile builds)
+if getattr(sys, 'frozen', False):
+    base_path = sys._MEIPASS
+    os.environ['TCL_LIBRARY'] = os.path.join(base_path, 'tcl', 'tcl8.6')
+    os.environ['TK_LIBRARY'] = os.path.join(base_path, 'tcl', 'tk8.6')
+
+# Temp dir override for restricted systems
+os.environ["TMPDIR"] = os.getcwd()
 
 # Globale Variablen
 image_list = []
@@ -157,6 +174,7 @@ def zeige_vorschau(index_delta=0):
         preview_window.title(f"Vorschau: {bild_name}")
 
         preview_label = tk.Label(preview_window, image=tk_img)
+        preview_label.image = tk_img  # fix: keep reference alive
         preview_label.pack()
 
         nav_frame = tk.Frame(preview_window)
@@ -166,6 +184,7 @@ def zeige_vorschau(index_delta=0):
     else:
         preview_window.title(f"Vorschau: {bild_name}")
         preview_label.configure(image=tk_img)
+        preview_label.image = tk_img  # fix: keep reference alive
 
     preview_image_ref = tk_img
 
@@ -182,6 +201,10 @@ def start_batch_verarbeitung():
 
     ziel_ordner = filedialog.askdirectory(title="Zielordner für Wasserzeichen-Bilder wählen")
     if not ziel_ordner:
+        return
+
+    if not os.access(ziel_ordner, os.W_OK):
+        messagebox.showerror("Fehler", f"Keine Schreibrechte für:\n{ziel_ordner}")
         return
 
     progress['maximum'] = len(image_list)
@@ -268,4 +291,3 @@ progress = ttk.Progressbar(root, orient="horizontal", length=400, mode="determin
 progress.pack(pady=5, padx=10)
 
 root.mainloop()
-
