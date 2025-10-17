@@ -11,22 +11,31 @@ datas_pil, binaries_pil, hiddenimports_pil = collect_all('PIL')
 datas_cairo, binaries_cairo, hiddenimports_cairo = collect_all('cairosvg')
 datas_cairocffi, binaries_cairocffi, hiddenimports_cairocffi = collect_all('cairocffi')
 
-# Find Cairo DLLs from GTK runtime
+# Find Cairo DLLs from cairo-dlls folder
 cairo_dlls = []
-gtk_paths = [
-    r'C:\gtk\bin',
-    r'C:\Program Files\GTK3-Runtime Win64\bin',
-    r'C:\Program Files (x86)\GTK3-Runtime Win64\bin',
-]
+cairo_dll_path = os.path.join(os.getcwd(), 'cairo-dlls')
 
-for gtk_path in gtk_paths:
-    if os.path.exists(gtk_path):
-        # Look for cairo and related DLLs
-        dll_patterns = ['*cairo*.dll', '*pixman*.dll', '*png*.dll', '*zlib*.dll', '*freetype*.dll']
-        for pattern in dll_patterns:
-            for dll in glob.glob(os.path.join(gtk_path, pattern)):
-                cairo_dlls.append((dll, '.'))
-        break
+if os.path.exists(cairo_dll_path):
+    print(f"Found cairo-dlls folder at: {cairo_dll_path}")
+    for dll_file in glob.glob(os.path.join(cairo_dll_path, '*.dll')):
+        cairo_dlls.append((dll_file, '.'))
+        print(f"Adding DLL: {os.path.basename(dll_file)}")
+else:
+    print(f"Warning: cairo-dlls folder not found at {cairo_dll_path}")
+    # Fallback: try to find Cairo DLLs in PATH
+    gtk_paths = [
+        r'C:\gtk\bin',
+        r'C:\Program Files\GTK3-Runtime Win64\bin',
+        r'C:\Program Files (x86)\GTK3-Runtime Win64\bin',
+    ]
+    
+    for gtk_path in gtk_paths:
+        if os.path.exists(gtk_path):
+            dll_patterns = ['*cairo*.dll', '*pixman*.dll', '*png*.dll', '*zlib*.dll', '*freetype*.dll']
+            for pattern in dll_patterns:
+                for dll in glob.glob(os.path.join(gtk_path, pattern)):
+                    cairo_dlls.append((dll, '.'))
+            break
 
 a = Analysis(
     ['main.py'],
