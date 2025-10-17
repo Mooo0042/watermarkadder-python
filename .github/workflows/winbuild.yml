@@ -26,7 +26,7 @@ jobs:
 
       - name: EXE bauen mit PyInstaller
         run: |
-          pyinstaller --onefile --name=WasserzeichenTool main.py --runtime-tmpdir .
+          pyinstaller build.spec --runtime-tmpdir .
 
 
       - name: EXE veröffentlichen
