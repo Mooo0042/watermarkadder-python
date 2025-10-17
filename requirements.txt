@@ -1,3 +1,5 @@
 Pillow
 cairosvg
 tkinter
+cairocffi
+cffi
