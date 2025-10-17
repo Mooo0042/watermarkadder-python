@@ -21,18 +21,22 @@ jobs:
       - name: Abhängigkeiten installieren
         run: |
           python -m pip install --upgrade pip
+          pip install Pillow cairosvg cairocffi cffi
           pip install -r requirements.txt
           pip install pyinstaller
 
+      - name: Verify PIL installation
+        run: |
+          python -c "import PIL; print(f'PIL version: {PIL.__version__}')"
+          python -c "import PIL.Image; print('PIL.Image imported successfully')"
+          python -c "from PIL import ImageTk; print('PIL.ImageTk imported successfully')"
+
       - name: EXE bauen mit PyInstaller
         run: |
-          pyinstaller build.spec
-
+          pyinstaller --clean build.spec
 
       - name: EXE veröffentlichen
         uses: actions/upload-artifact@v4.6.2
         with:
           name: WasserzeichenTool-Windows
           path: dist/WasserzeichenTool.exe
-
-          

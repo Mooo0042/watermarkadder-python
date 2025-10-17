@@ -2,12 +2,19 @@
 
 block_cipher = None
 
+from PyInstaller.utils.hooks import collect_all, collect_submodules
+
+# Collect all PIL/Pillow modules and data
+datas_pil, binaries_pil, hiddenimports_pil = collect_all('PIL')
+datas_cairo, binaries_cairo, hiddenimports_cairo = collect_all('cairosvg')
+datas_cairocffi, binaries_cairocffi, hiddenimports_cairocffi = collect_all('cairocffi')
+
 a = Analysis(
     ['main.py'],
     pathex=[],
-    binaries=[],
-    datas=[],
-    hiddenimports=[
+    binaries=binaries_pil + binaries_cairo + binaries_cairocffi,
+    datas=datas_pil + datas_cairo + datas_cairocffi,
+    hiddenimports=hiddenimports_pil + hiddenimports_cairo + hiddenimports_cairocffi + [
         'PIL',
         'PIL.Image',
         'PIL.ImageTk',
@@ -15,9 +22,6 @@ a = Analysis(
         'PIL.ImageStat',
         'PIL._imagingtk',
         'PIL._tkinter_finder',
-        'cairosvg',
-        'cairocffi',
-        'cffi',
         'tkinter',
         'tkinter.filedialog',
         'tkinter.messagebox',
