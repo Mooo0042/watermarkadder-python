@@ -23,31 +23,39 @@ jobs:
           # Create directory for DLLs
           New-Item -ItemType Directory -Force -Path cairo-dlls
           
-          # Download Cairo and dependencies from MSYS2
-          $dlls = @(
+          # Install zstd for extraction
+          choco install -y zstandard --version=1.5.5
+          
+          # Download Cairo and ALL dependencies from MSYS2
+          $packages = @(
             "https://repo.msys2.org/mingw/mingw64/mingw-w64-x86_64-cairo-1.18.2-2-any.pkg.tar.zst",
             "https://repo.msys2.org/mingw/mingw64/mingw-w64-x86_64-freetype-2.13.3-1-any.pkg.tar.zst",
             "https://repo.msys2.org/mingw/mingw64/mingw-w64-x86_64-fontconfig-2.15.0-2-any.pkg.tar.zst",
             "https://repo.msys2.org/mingw/mingw64/mingw-w64-x86_64-libpng-1.6.44-1-any.pkg.tar.zst",
             "https://repo.msys2.org/mingw/mingw64/mingw-w64-x86_64-pixman-0.43.4-1-any.pkg.tar.zst",
-            "https://repo.msys2.org/mingw/mingw64/mingw-w64-x86_64-zlib-1.3.1-1-any.pkg.tar.zst"
+            "https://repo.msys2.org/mingw/mingw64/mingw-w64-x86_64-zlib-1.3.1-1-any.pkg.tar.zst",
+            "https://repo.msys2.org/mingw/mingw64/mingw-w64-x86_64-glib2-2.82.2-1-any.pkg.tar.zst",
+            "https://repo.msys2.org/mingw/mingw64/mingw-w64-x86_64-pcre2-10.44-1-any.pkg.tar.zst",
+            "https://repo.msys2.org/mingw/mingw64/mingw-w64-x86_64-bzip2-1.0.8-4-any.pkg.tar.zst",
+            "https://repo.msys2.org/mingw/mingw64/mingw-w64-x86_64-expat-2.6.4-1-any.pkg.tar.zst",
+            "https://repo.msys2.org/mingw/mingw64/mingw-w64-x86_64-brotli-1.1.0-1-any.pkg.tar.zst"
           )
           
-          # Install zstd for extraction
-          choco install -y zstandard --version=1.5.5
-          
-          foreach ($url in $dlls) {
+          foreach ($url in $packages) {
             $filename = Split-Path $url -Leaf
             Write-Host "Downloading $filename..."
-            Invoke-WebRequest -Uri $url -OutFile $filename
-            
-            # Extract with zstd and tar
-            & "C:\ProgramData\chocolatey\bin\zstd.exe" -d $filename
-            $tarFile = $filename -replace '\.zst$', ''
-            tar -xf $tarFile -C cairo-dlls --strip-components=2 mingw64/bin
-            
-            Remove-Item $filename -ErrorAction SilentlyContinue
-            Remove-Item $tarFile -ErrorAction SilentlyContinue
+            try {
+              Invoke-WebRequest -Uri $url -OutFile $filename -ErrorAction Stop
+              
+              # Extract with zstd and tar
+              & "C:\ProgramData\chocolatey\bin\zstd.exe" -d $filename -o "$filename.tar"
+              tar -xf "$filename.tar" -C cairo-dlls --strip-components=1 "mingw64/bin/*.dll" 2>$null
+              
+              Remove-Item $filename -ErrorAction SilentlyContinue
+              Remove-Item "$filename.tar" -ErrorAction SilentlyContinue
+            } catch {
+              Write-Host "Warning: Failed to download $filename - $($_.Exception.Message)"
+            }
           }
           
           # Add Cairo DLLs to PATH
@@ -55,9 +63,9 @@ jobs:
           echo "$cairoPath" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
           $env:PATH = "$cairoPath;$env:PATH"
           
-          # List DLLs
-          Write-Host "Cairo DLLs:"
-          Get-ChildItem -Path $cairoPath -Filter *.dll | ForEach-Object { Write-Host $_.Name }
+          # List all DLLs
+          Write-Host "`nExtracted DLLs:"
+          Get-ChildItem -Path $cairoPath -Filter *.dll | ForEach-Object { Write-Host "  - $($_.Name)" }
 
       - name: Abhängigkeiten installieren
         run: |
