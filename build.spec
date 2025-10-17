@@ -5,11 +5,25 @@ block_cipher = None
 from PyInstaller.utils.hooks import collect_all, collect_submodules
 import os
 import glob
+import sys
 
 # Collect all PIL/Pillow modules and data
 datas_pil, binaries_pil, hiddenimports_pil = collect_all('PIL')
 datas_cairo, binaries_cairo, hiddenimports_cairo = collect_all('cairosvg')
 datas_cairocffi, binaries_cairocffi, hiddenimports_cairocffi = collect_all('cairocffi')
+
+# Find TCL/TK data files
+import tkinter
+tk_path = os.path.dirname(tkinter.__file__)
+tcl_path = os.path.join(tk_path, 'tcl')
+tk_library_path = os.path.join(tk_path, 'tk')
+
+# Collect TCL/TK data
+tk_datas = []
+if os.path.exists(tcl_path):
+    tk_datas.append((tcl_path, 'tcl'))
+if os.path.exists(tk_library_path):
+    tk_datas.append((tk_library_path, 'tk'))
 
 # Find Cairo DLLs from cairo-dlls folder
 cairo_dlls = []
@@ -41,7 +55,7 @@ a = Analysis(
     ['main.py'],
     pathex=[],
     binaries=binaries_pil + binaries_cairo + binaries_cairocffi + cairo_dlls,
-    datas=datas_pil + datas_cairo + datas_cairocffi,
+    datas=datas_pil + datas_cairo + datas_cairocffi + tk_datas,
     hiddenimports=hiddenimports_pil + hiddenimports_cairo + hiddenimports_cairocffi + [
         'PIL',
         'PIL.Image',
@@ -54,6 +68,7 @@ a = Analysis(
         'tkinter.filedialog',
         'tkinter.messagebox',
         'tkinter.ttk',
+        '_tkinter',
     ],
     hookspath=[],
     hooksconfig={},
