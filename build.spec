@@ -14,16 +14,43 @@ datas_cairocffi, binaries_cairocffi, hiddenimports_cairocffi = collect_all('cair
 
 # Find TCL/TK data files
 import tkinter
-tk_path = os.path.dirname(tkinter.__file__)
-tcl_path = os.path.join(tk_path, 'tcl')
-tk_library_path = os.path.join(tk_path, 'tk')
+tkinter_dir = os.path.dirname(tkinter.__file__)
 
-# Collect TCL/TK data
+# Look for tcl and tk directories in Python installation
+tcl_dir = None
+tk_dir = None
+
+# Try multiple possible locations
+possible_tcl_paths = [
+    os.path.join(tkinter_dir, 'tcl'),
+    os.path.join(sys.prefix, 'tcl'),
+    os.path.join(sys.prefix, 'Library', 'lib', 'tcl8.6'),
+]
+
+possible_tk_paths = [
+    os.path.join(tkinter_dir, 'tk'),
+    os.path.join(sys.prefix, 'tk'),
+    os.path.join(sys.prefix, 'Library', 'lib', 'tk8.6'),
+]
+
+for path in possible_tcl_paths:
+    if os.path.exists(path):
+        tcl_dir = path
+        print(f"Found TCL at: {tcl_dir}")
+        break
+
+for path in possible_tk_paths:
+    if os.path.exists(path):
+        tk_dir = path
+        print(f"Found TK at: {tk_dir}")
+        break
+
+# Collect TCL/TK data - bundle to tcl/tk8.6 subdirectories
 tk_datas = []
-if os.path.exists(tcl_path):
-    tk_datas.append((tcl_path, 'tcl'))
-if os.path.exists(tk_library_path):
-    tk_datas.append((tk_library_path, 'tk'))
+if tcl_dir and os.path.exists(tcl_dir):
+    tk_datas.append((tcl_dir, 'tcl/tcl8.6'))
+if tk_dir and os.path.exists(tk_dir):
+    tk_datas.append((tk_dir, 'tcl/tk8.6'))
 
 # Find Cairo DLLs from cairo-dlls folder
 cairo_dlls = []
