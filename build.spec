@@ -22,15 +22,17 @@ tk_dir = None
 
 # Try multiple possible locations
 possible_tcl_paths = [
-    os.path.join(tkinter_dir, 'tcl'),
-    os.path.join(sys.prefix, 'tcl'),
+    os.path.join(sys.prefix, 'tcl', 'tcl8.6'),
     os.path.join(sys.prefix, 'Library', 'lib', 'tcl8.6'),
+    os.path.join(tkinter_dir, 'tcl8.6'),
+    os.path.join(sys.base_prefix, 'tcl', 'tcl8.6'),
 ]
 
 possible_tk_paths = [
-    os.path.join(tkinter_dir, 'tk'),
-    os.path.join(sys.prefix, 'tk'),
+    os.path.join(sys.prefix, 'tcl', 'tk8.6'),
     os.path.join(sys.prefix, 'Library', 'lib', 'tk8.6'),
+    os.path.join(tkinter_dir, 'tk8.6'),
+    os.path.join(sys.base_prefix, 'tcl', 'tk8.6'),
 ]
 
 for path in possible_tcl_paths:
@@ -45,12 +47,29 @@ for path in possible_tk_paths:
         print(f"Found TK at: {tk_dir}")
         break
 
-# Collect TCL/TK data - bundle to tcl/tk8.6 subdirectories
+# Collect TCL/TK data - try multiple bundling approaches
 tk_datas = []
+
+# Approach 1: Bundle to root level (sometimes works better on Windows)
 if tcl_dir and os.path.exists(tcl_dir):
-    tk_datas.append((tcl_dir, 'tcl/tcl8.6'))
+    tk_datas.append((tcl_dir, 'tcl8.6'))
+    print(f"Bundling TCL from {tcl_dir} to tcl8.6")
+
 if tk_dir and os.path.exists(tk_dir):
-    tk_datas.append((tk_dir, 'tcl/tk8.6'))
+    tk_datas.append((tk_dir, 'tk8.6'))
+    print(f"Bundling TK from {tk_dir} to tk8.6")
+
+# Approach 2: Also try the nested structure
+if tcl_dir and os.path.exists(tcl_dir):
+    tk_datas.append((tcl_dir, os.path.join('tcl', 'tcl8.6')))
+
+if tk_dir and os.path.exists(tk_dir):
+    tk_datas.append((tk_dir, os.path.join('tcl', 'tk8.6')))
+
+if not tk_datas:
+    print("WARNING: Could not find TCL/TK libraries!")
+    print(f"Python prefix: {sys.prefix}")
+    print(f"Tkinter dir: {tkinter_dir}")
 
 # Find Cairo DLLs from cairo-dlls folder
 cairo_dlls = []
@@ -63,20 +82,6 @@ if os.path.exists(cairo_dll_path):
         print(f"Adding DLL: {os.path.basename(dll_file)}")
 else:
     print(f"Warning: cairo-dlls folder not found at {cairo_dll_path}")
-    # Fallback: try to find Cairo DLLs in PATH
-    gtk_paths = [
-        r'C:\gtk\bin',
-        r'C:\Program Files\GTK3-Runtime Win64\bin',
-        r'C:\Program Files (x86)\GTK3-Runtime Win64\bin',
-    ]
-    
-    for gtk_path in gtk_paths:
-        if os.path.exists(gtk_path):
-            dll_patterns = ['*cairo*.dll', '*pixman*.dll', '*png*.dll', '*zlib*.dll', '*freetype*.dll']
-            for pattern in dll_patterns:
-                for dll in glob.glob(os.path.join(gtk_path, pattern)):
-                    cairo_dlls.append((dll, '.'))
-            break
 
 a = Analysis(
     ['main.py'],
@@ -119,12 +124,12 @@ exe = EXE(
     strip=False,
     upx=True,
     upx_exclude=[],
-    runtime_tmpdir='.',
-    console=True,  # Keep console for debugging; change to False once everything works
+    runtime_tmpdir=None,  # Changed from '.' to None - let PyInstaller handle temp dir
+    console=True,  # Keep True for debugging
     disable_windowed_traceback=False,
     argv_emulation=False,
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon=None,  # Add your icon path here if you have one
+    icon=None,
 )
