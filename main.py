@@ -16,14 +16,58 @@ except Exception:
 # PyInstaller TCL/TK path fix (for Windows onefile builds)
 if getattr(sys, 'frozen', False):
     base_path = sys._MEIPASS
-    os.environ['TCL_LIBRARY'] = os.path.join(base_path, 'tcl', 'tcl8.6')
-    os.environ['TK_LIBRARY'] = os.path.join(base_path, 'tcl', 'tk8.6')
     print(f"Running as frozen exe")
-    print(f"Base path: {base_path}")
-    print(f"TCL_LIBRARY: {os.environ['TCL_LIBRARY']}")
-    print(f"TK_LIBRARY: {os.environ['TK_LIBRARY']}")
-    print(f"TCL exists: {os.path.exists(os.environ['TCL_LIBRARY'])}")
-    print(f"TK exists: {os.path.exists(os.environ['TK_LIBRARY'])}")
+    print(f"Base path (_MEIPASS): {base_path}")
+    
+    # Try to find TCL/TK in various possible locations
+    tcl_possible = [
+        os.path.join(base_path, 'tcl', 'tcl8.6'),
+        os.path.join(base_path, 'tcl8.6'),
+        os.path.join(base_path, 'tcl', 'tcl8'),
+        os.path.join(base_path, 'tcl8'),
+    ]
+    
+    tk_possible = [
+        os.path.join(base_path, 'tcl', 'tk8.6'),
+        os.path.join(base_path, 'tk8.6'),
+        os.path.join(base_path, 'tcl', 'tk8'),
+        os.path.join(base_path, 'tk8'),
+    ]
+    
+    # Find actual TCL location
+    tcl_found = None
+    for path in tcl_possible:
+        if os.path.exists(path):
+            tcl_found = path
+            print(f"Found TCL at: {path}")
+            break
+    
+    # Find actual TK location
+    tk_found = None
+    for path in tk_possible:
+        if os.path.exists(path):
+            tk_found = path
+            print(f"Found TK at: {path}")
+            break
+    
+    if tcl_found:
+        os.environ['TCL_LIBRARY'] = tcl_found
+    else:
+        print("WARNING: TCL library not found!")
+        print(f"Contents of {base_path}:")
+        try:
+            for item in os.listdir(base_path):
+                print(f"  - {item}")
+        except Exception as e:
+            print(f"  Could not list: {e}")
+    
+    if tk_found:
+        os.environ['TK_LIBRARY'] = tk_found
+    else:
+        print("WARNING: TK library not found!")
+    
+    print(f"TCL_LIBRARY set to: {os.environ.get('TCL_LIBRARY', 'NOT SET')}")
+    print(f"TK_LIBRARY set to: {os.environ.get('TK_LIBRARY', 'NOT SET')}")
 else:
     print("Running in normal Python mode")
 
