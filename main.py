@@ -18,6 +18,14 @@ if getattr(sys, 'frozen', False):
     base_path = sys._MEIPASS
     os.environ['TCL_LIBRARY'] = os.path.join(base_path, 'tcl', 'tcl8.6')
     os.environ['TK_LIBRARY'] = os.path.join(base_path, 'tcl', 'tk8.6')
+    print(f"Running as frozen exe")
+    print(f"Base path: {base_path}")
+    print(f"TCL_LIBRARY: {os.environ['TCL_LIBRARY']}")
+    print(f"TK_LIBRARY: {os.environ['TK_LIBRARY']}")
+    print(f"TCL exists: {os.path.exists(os.environ['TCL_LIBRARY'])}")
+    print(f"TK exists: {os.path.exists(os.environ['TK_LIBRARY'])}")
+else:
+    print("Running in normal Python mode")
 
 # Temp dir override for restricted systems
 os.environ["TMPDIR"] = os.getcwd()
@@ -235,8 +243,17 @@ def start_batch_verarbeitung():
     progress['value'] = 0
 
 # Hauptfenster
-root = tk.Tk()
-root.title("Wasserzeichen-Tool")
+try:
+    print("Initializing tkinter...")
+    root = tk.Tk()
+    root.title("Wasserzeichen-Tool")
+    print("Tkinter initialized successfully!")
+except Exception as e:
+    print(f"ERROR initializing tkinter: {e}")
+    import traceback
+    traceback.print_exc()
+    input("Press Enter to exit...")
+    sys.exit(1)
 
 # Variables
 bilder_ordner = tk.StringVar()
@@ -292,4 +309,12 @@ tk.Button(frame_buttons, text="Batch starten", command=start_batch_verarbeitung)
 progress = ttk.Progressbar(root, orient="horizontal", length=400, mode="determinate")
 progress.pack(pady=5, padx=10)
 
-root.mainloop()
+print("Starting main loop...")
+try:
+    root.mainloop()
+except Exception as e:
+    print(f"ERROR in main loop: {e}")
+    import traceback
+    traceback.print_exc()
+    input("Press Enter to exit...")
+    sys.exit(1)
