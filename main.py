@@ -16,11 +16,8 @@ except Exception:
 # PyInstaller TCL/TK path fix (for Windows onefile builds)
 if getattr(sys, 'frozen', False):
     base_path = sys._MEIPASS
-    # Set TCL/TK library paths to bundled directories
     os.environ['TCL_LIBRARY'] = os.path.join(base_path, 'tcl', 'tcl8.6')
     os.environ['TK_LIBRARY'] = os.path.join(base_path, 'tcl', 'tk8.6')
-    print(f"TCL_LIBRARY: {os.environ['TCL_LIBRARY']}")
-    print(f"TK_LIBRARY: {os.environ['TK_LIBRARY']}")
 
 # Temp dir override for restricted systems
 os.environ["TMPDIR"] = os.getcwd()
@@ -51,16 +48,8 @@ def lade_bilderliste():
         messagebox.showwarning("Warnung", "Keine Bilder im Ordner gefunden.")
 
 def waehle_logo_datei(var):
-    if SVG_SUPPORT:
-        filetypes = [("Bilddateien", "*.png *.jpg *.jpeg *.bmp *.gif *.svg")]
-    else:
-        filetypes = [("Bilddateien", "*.png *.jpg *.jpeg *.bmp *.gif")]
-    
-    pfad = filedialog.askopenfilename(filetypes=filetypes)
+    pfad = filedialog.askopenfilename(filetypes=[("Bilddateien", "*.png *.jpg *.jpeg *.bmp *.gif *.svg")])
     if pfad:
-        if pfad.lower().endswith(".svg") and not SVG_SUPPORT:
-            messagebox.showerror("Fehler", "SVG-Unterstützung ist nicht verfügbar. Bitte verwenden Sie PNG, JPG oder andere Bildformate.")
-            return
         var.set(pfad)
 
 def logo_bild_laden(pfad):
@@ -68,9 +57,6 @@ def logo_bild_laden(pfad):
         return None
     try:
         if pfad.lower().endswith(".svg"):
-            if not SVG_SUPPORT:
-                messagebox.showerror("Fehler", "SVG-Unterstützung ist nicht verfügbar. Bitte verwenden Sie PNG, JPG oder andere Bildformate.")
-                return None
             png_data = cairosvg.svg2png(url=pfad)
             img = Image.open(BytesIO(png_data)).convert("RGBA")
         else:
@@ -168,7 +154,7 @@ def zeige_vorschau(index_delta=0):
         img,
         logo_schwarz_img,
         logo_weiss_img,
-        deckkraft_regler.get(),
+        deckkraft_var.get(),  # FIXED: Use deckkraft_var instead of deckkraft_regler
         position_var.get(),
         auto_brightness.get(),
         auto_opacity.get()
@@ -188,7 +174,7 @@ def zeige_vorschau(index_delta=0):
         preview_window.title(f"Vorschau: {bild_name}")
 
         preview_label = tk.Label(preview_window, image=tk_img)
-        preview_label.image = tk_img  # fix: keep reference alive
+        preview_label.image = tk_img
         preview_label.pack()
 
         nav_frame = tk.Frame(preview_window)
@@ -198,7 +184,7 @@ def zeige_vorschau(index_delta=0):
     else:
         preview_window.title(f"Vorschau: {bild_name}")
         preview_label.configure(image=tk_img)
-        preview_label.image = tk_img  # fix: keep reference alive
+        preview_label.image = tk_img
 
     preview_image_ref = tk_img
 
@@ -233,7 +219,7 @@ def start_batch_verarbeitung():
             img,
             logo_schwarz_img,
             logo_weiss_img,
-            deckkraft_regler.get(),
+            deckkraft_var.get(),  # FIXED: Use deckkraft_var instead of deckkraft_regler
             position_var.get(),
             auto_brightness.get(),
             auto_opacity.get()
@@ -249,3 +235,61 @@ def start_batch_verarbeitung():
     progress['value'] = 0
 
 # Hauptfenster
+root = tk.Tk()
+root.title("Wasserzeichen-Tool")
+
+# Variables
+bilder_ordner = tk.StringVar()
+logo_datei_schwarz = tk.StringVar()
+logo_datei_weiss = tk.StringVar()
+position_var = tk.StringVar(value="unten links")
+deckkraft_var = tk.IntVar(value=50)  # FIXED: Renamed from deckkraft_regler to deckkraft_var
+auto_brightness = tk.BooleanVar(value=False)
+auto_opacity = tk.BooleanVar(value=False)
+
+# GUI Layout
+frame_ordner = tk.Frame(root)
+frame_ordner.pack(fill="x", padx=10, pady=5)
+tk.Label(frame_ordner, text="Bilder-Ordner:").pack(anchor="w")
+entry_ordner = tk.Entry(frame_ordner, textvariable=bilder_ordner, width=60)
+entry_ordner.pack(side="left", padx=(0, 5))
+tk.Button(frame_ordner, text="Ordner wählen", command=waehle_ordner).pack(side="left")
+
+frame_logo = tk.Frame(root)
+frame_logo.pack(fill="x", padx=10, pady=5)
+tk.Label(frame_logo, text="Schwarzes Logo:").grid(row=0, column=0, sticky="w")
+entry_logo_s = tk.Entry(frame_logo, textvariable=logo_datei_schwarz, width=60)
+entry_logo_s.grid(row=0, column=1, padx=5)
+tk.Button(frame_logo, text="Logo wählen", command=lambda: waehle_logo_datei(logo_datei_schwarz)).grid(row=0, column=2)
+
+tk.Label(frame_logo, text="Weißes Logo:").grid(row=1, column=0, sticky="w")
+entry_logo_w = tk.Entry(frame_logo, textvariable=logo_datei_weiss, width=60)
+entry_logo_w.grid(row=1, column=1, padx=5)
+tk.Button(frame_logo, text="Logo wählen", command=lambda: waehle_logo_datei(logo_datei_weiss)).grid(row=1, column=2)
+
+frame_optionen = tk.Frame(root)
+frame_optionen.pack(fill="x", padx=10, pady=5)
+tk.Label(frame_optionen, text="Position:").grid(row=0, column=0, sticky="w")
+positions = ["unten links", "unten rechts", "oben links", "oben rechts"]
+pos_dropdown = ttk.Combobox(frame_optionen, values=positions, textvariable=position_var, state="readonly", width=15)
+pos_dropdown.grid(row=0, column=1, sticky="w")
+
+tk.Label(frame_optionen, text="Deckkraft:").grid(row=1, column=0, sticky="w")
+deckkraft_slider = tk.Scale(frame_optionen, from_=10, to=100, orient="horizontal", variable=deckkraft_var)
+deckkraft_slider.grid(row=1, column=1, sticky="w")
+
+cb_auto_brightness = tk.Checkbutton(frame_optionen, text="Automatische Helligkeit (Subtiles Weiß-Schwarz-Wechsel)", variable=auto_brightness)
+cb_auto_brightness.grid(row=2, column=0, columnspan=2, sticky="w")
+
+cb_auto_opacity = tk.Checkbutton(frame_optionen, text="Automatische Deckkraft (immer subtil sichtbar)", variable=auto_opacity)
+cb_auto_opacity.grid(row=3, column=0, columnspan=2, sticky="w")
+
+frame_buttons = tk.Frame(root)
+frame_buttons.pack(fill="x", padx=10, pady=10)
+tk.Button(frame_buttons, text="Vorschau zeigen", command=lambda: zeige_vorschau(0)).pack(side="left", padx=5)
+tk.Button(frame_buttons, text="Batch starten", command=start_batch_verarbeitung).pack(side="left", padx=5)
+
+progress = ttk.Progressbar(root, orient="horizontal", length=400, mode="determinate")
+progress.pack(pady=5, padx=10)
+
+root.mainloop()
